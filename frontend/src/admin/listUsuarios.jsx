@@ -16,7 +16,7 @@ function UsuarioList() {
     password: "",
   });
 
-  // Cargar la lista de usuarios al inicio
+  
   useEffect(() => {
     fetchUsuarios();
   }, []);
@@ -42,7 +42,7 @@ function UsuarioList() {
             Authorization: `Bearer ${token}`,
           },
         });
-        fetchUsuarios(); // Actualizar lista
+        fetchUsuarios(); 
       } catch (error) {
         console.error("Error al eliminar usuario:", error);
       }
@@ -71,7 +71,7 @@ function UsuarioList() {
         }
       );
       setShowModal(false);
-      fetchUsuarios(); // Actualizar lista
+      fetchUsuarios(); 
     } catch (error) {
       console.error("Error al actualizar usuario:", error);
     }
@@ -123,7 +123,7 @@ function UsuarioList() {
         }
       );
       setShowModal(false);
-      fetchUsuarios(); // Actualizar lista
+      fetchUsuarios(); 
     } catch (error) {
       console.error("Error al crear usuario:", error);
     }

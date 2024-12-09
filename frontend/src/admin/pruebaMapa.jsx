@@ -12,8 +12,8 @@ export default function MyMap() {
   });
   const [carreteras, setCarreteras] = useState([]);
   const [municipios, setMunicipios] = useState([]);
-  const [polylines, setPolylines] = useState([]); // State to track polylines
-  const [circles, setCircles] = useState([]); // State to track circles
+  const [polylines, setPolylines] = useState([]);
+  const [circles, setCircles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSelectingPoints, setIsSelectingPoints] = useState(false);
   const [currentCarretera, setCurrentCarretera] = useState({
@@ -82,7 +82,7 @@ export default function MyMap() {
       },
     ]);
 
-    // Remove previous polylines and circles if any
+    
     polylines.forEach((polyline) => polyline.setMap(null));
     circles.forEach((circle) => circle.setMap(null));
 
@@ -117,7 +117,7 @@ export default function MyMap() {
       });
     });
 
-    // Update state with new polylines and circles
+    
     setPolylines(newPolylines);
     setCircles(newCircles);
   };
@@ -136,7 +136,7 @@ export default function MyMap() {
 
   const handleView = (carretera) => {
     setCurrentCarretera(carretera);
-    // Remove previous polylines and circles if any
+    
     polylines.forEach((polyline) => polyline.setMap(null));
     circles.forEach((circle) => circle.setMap(null));
     const polylineArray = [
@@ -180,8 +180,7 @@ export default function MyMap() {
       newCircles.push(circle);
     });
 
-    //center map to the middle point
-    //get the middle point of polylineArray
+    
     const middle = Math.floor(polylineArray.length / 2);
 
     map.setCenter(polylineArray[middle]);
@@ -264,7 +263,7 @@ export default function MyMap() {
     const method = "POST";
     const url = `http://localhost:3000/punto/carretera/${currentCarretera.id}`;
 
-    //copy all points except first and last
+   
     const newPuntos = puntos.slice(1, puntos.length - 1).map((punto) => ({
       latitud: punto.lat,
       longitud: punto.lng,

@@ -205,10 +205,10 @@ export default function Carreteras() {
   };
 
   const showMotivoBloqueo = (carretera) => {
-    // search point that has incidente
+    
     const incidente = carretera.puntos.find((punto) => punto.incidente);
     if (incidente) {
-      //show descripcion  and foto
+      
       setIncidente({
         descripcion: incidente.incidente.descripcion,
         foto: incidente.incidente.foto,

@@ -17,8 +17,8 @@ export default function Incidentes() {
   const [incidentes, setIncidentes] = useState([]);
   const [carreteras, setCarreteras] = useState([]);
   const [municipios, setMunicipios] = useState([]);
-  const [polylines, setPolylines] = useState([]); // State to track polylines
-  const [circles, setCircles] = useState([]); // State to track circles
+  const [polylines, setPolylines] = useState([]);
+  const [circles, setCircles] = useState([]); 
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [isSelectingPoint, setIsSelectingPoint] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -145,7 +145,7 @@ export default function Incidentes() {
       },
     ]);
 
-    // Remove previous polylines and circles if any
+    
     polylines.forEach((polyline) => polyline.setMap(null));
     circles.forEach((circle) => circle.setMap(null));
 
@@ -198,7 +198,7 @@ export default function Incidentes() {
       });
     });
 
-    // Update state with new polylines and circles
+    
     setPolylines(newPolylines);
     setCircles(newCircles);
   };
@@ -226,7 +226,7 @@ export default function Incidentes() {
       puntoId: selectedPoint,
     };
 
-    //do it with foto as image
+    
     const formData = new FormData();
     formData.append("tipo", incidenteData.tipo);
     formData.append("descripcion", incidenteData.descripcion);
@@ -299,7 +299,7 @@ export default function Incidentes() {
     }
     map.panTo(circle.center);
     map.setZoom(10);
-    //do animation growing and shrinking
+    
     const growInterval = setInterval(() => {
       circle.setRadius(circle.getRadius() + 100);
     }, 100);

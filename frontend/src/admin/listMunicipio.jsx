@@ -12,7 +12,7 @@ const Municipios = () => {
   const [mapCenter, setMapCenter] = useState({
     lat: -16.290154,
     lng: -63.588653,
-  }); // Coordenadas iniciales
+  }); 
   const [showModal, setShowModal] = useState(false);
   const [currentMunicipio, setCurrentMunicipio] = useState({
     id: 0,

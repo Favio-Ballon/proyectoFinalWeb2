@@ -7,6 +7,8 @@ import Municipios from "./admin/listMunicipio.jsx";
 import Carreteras from "./admin/listCarretera.jsx";
 import Incidentes from "./admin/listIncidente.jsx";
 import MyMap from "./admin/pruebaMapa.jsx";
+import UsuarioList from "./admin/listUsuarios.jsx";
+import Login from "./login.jsx";
 
 const router = createBrowserRouter([
   {
@@ -28,6 +30,14 @@ const router = createBrowserRouter([
   {
     path: "/incidente",
     element: <Incidentes />,
+  },
+  {
+    path: "/usuario",
+    element: <UsuarioList />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
   }
 ]);
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;

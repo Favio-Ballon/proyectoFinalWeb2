@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { Map, Marker } from "@vis.gl/react-google-maps";
 import { Table, Button, Modal, Form } from "react-bootstrap";
+import HeaderAdmin from "../components/headerAdmin";
+import { useAuth } from "../hooks/useAuth";
+import axios from "axios";
 
 const Municipios = () => {
+  const token = useAuth();
+  const user = JSON.parse(localStorage.getItem("user"));
   const [municipios, setMunicipios] = useState([]);
   const [mapCenter, setMapCenter] = useState({
     lat: -16.290154,
@@ -16,7 +21,7 @@ const Municipios = () => {
     longitud: mapCenter.lng,
     createdAt: "",
     updatedAt: "",
-    usuarioId: 0,
+    usuarioId: user.id,
   });
   const [selecionarUbicacion, setSelecionarUbicacion] = useState(false);
   const [editar, setEditar] = useState(false);
@@ -26,7 +31,12 @@ const Municipios = () => {
   }, []);
 
   const fetchMunicipios = () => {
-    fetch("http://localhost:3000/municipio")
+    fetch("http://localhost:3000/municipio", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
       .then((response) => response.json())
       .then((data) => setMunicipios(data))
       .catch((error) => console.error("Error fetching municipios:", error));
@@ -51,7 +61,7 @@ const Municipios = () => {
       longitud: parseFloat(municipio.longitud),
       createdAt: municipio.createdAt,
       updatedAt: municipio.updatedAt,
-      usuarioId: municipio.usuarioId,
+      usuarioId: user.id,
     });
     setEditar(true);
     setSelecionarUbicacion(true);
@@ -59,7 +69,12 @@ const Municipios = () => {
 
   const handleDelete = (id) => {
     if (window.confirm("¿Está seguro de que desea eliminar este municipio?")) {
-      fetch(`http://localhost:3000/municipio/${id}`, { method: "DELETE" })
+      axios
+        .delete(`http://localhost:3000/municipio/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         .then(() => {
           alert("Municipio eliminado correctamente.");
           fetchMunicipios();
@@ -69,29 +84,52 @@ const Municipios = () => {
   };
 
   const handleSaveEdit = () => {
+    const newMunicipio = {
+      nombre: currentMunicipio.nombre,
+      latitud: parseFloat(currentMunicipio.latitud),  
+      longitud: parseFloat(currentMunicipio.longitud),
+      usuarioId: user.id,
+    }
+
+    console.log("newMunicipio:", newMunicipio);
+
     fetch(`http://localhost:3000/municipio/${currentMunicipio.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(currentMunicipio),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newMunicipio),
     })
       .then(() => {
         alert("Municipio actualizado correctamente.");
         setShowModal(false);
         fetchMunicipios();
+        setEditar(false);
+        setSelecionarUbicacion(false);
       })
       .catch((error) => console.error("Error actualizando municipio:", error));
   };
 
   const handleAddMunicipio = () => {
+    setCurrentMunicipio({
+      ...currentMunicipio,
+      usuarioId: user.id,
+    });
+    console.log("currentMunicipio:", currentMunicipio);
     fetch("http://localhost:3000/municipio", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(currentMunicipio),
     })
       .then(() => {
         alert("Municipio añadido correctamente.");
         setShowModal(false);
         fetchMunicipios();
+        selecionarUbicacion(false);
       })
       .catch((error) => console.error("Error añadiendo municipio:", error));
   };
@@ -106,6 +144,7 @@ const Municipios = () => {
 
   return (
     <div className="container mt-4">
+      <HeaderAdmin />
       <h1 className="mb-4">Mapa de Municipios</h1>
 
       {!selecionarUbicacion ? (
@@ -133,7 +172,7 @@ const Municipios = () => {
                   longitud: mapCenter.lng,
                   createdAt: "",
                   updatedAt: "",
-                  usuarioId: 0,
+                  usuarioId: user.id,
                 });
               }}
             >
@@ -206,6 +245,7 @@ const Municipios = () => {
             <th>Nombre</th>
             <th>Latitud</th>
             <th>Longitud</th>
+            {user?.admin && <th>Usuario</th>}
             <th>Acciones</th>
           </tr>
         </thead>
@@ -216,6 +256,7 @@ const Municipios = () => {
               <td>{municipio.nombre}</td>
               <td>{municipio.latitud}</td>
               <td>{municipio.longitud}</td>
+              {user?.admin && <td>{municipio.usuario?.nombre}</td>}
               <td>
                 <Button
                   variant="info"

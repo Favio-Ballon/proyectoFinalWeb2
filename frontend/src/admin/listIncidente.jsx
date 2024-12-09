@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import axios from "axios";
-import { Button, Form, Modal, Table } from "react-bootstrap";
+import { Button, Form, Image, Modal, Table } from "react-bootstrap";
+import HeaderAdmin from "../components/headerAdmin";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Incidentes() {
+  const token = useAuth();
+  const user = JSON.parse(localStorage.getItem("user"));
   const map = useMap();
   const maps = useMapsLibrary("maps");
   const [mapCenter, setMapCenter] = useState({
@@ -37,6 +41,7 @@ export default function Incidentes() {
   ];
   const [file, setFile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [solicitudIncidente, setSolicitudIncidente] = useState([]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -48,6 +53,7 @@ export default function Incidentes() {
     fetchIncidentes();
     fetchCarreteras();
     fetchMunicipios();
+    fetchSolicitudIncidente();
   }, [maps]);
 
   useEffect(() => {
@@ -59,8 +65,29 @@ export default function Incidentes() {
     }
   }, [maps, carreteras]);
 
+  const fetchSolicitudIncidente = () => {
+    axios
+      .get("http://localhost:3000/solicitudIncidente", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+      .then((response) => {
+        setSolicitudIncidente(response.data);
+      })
+      .catch((error) =>
+        console.error("Error fetching solicitud incidente:", error)
+      );
+  };
+
   const fetchMunicipios = () => {
-    fetch("http://localhost:3000/municipio")
+    fetch("http://localhost:3000/municipio", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
       .then((response) => response.json())
       .then((data) => setMunicipios(data))
       .catch((error) => console.error("Error fetching municipios:", error));
@@ -68,7 +95,12 @@ export default function Incidentes() {
 
   const fetchCarreteras = () => {
     axios
-      .get("http://localhost:3000/carretera")
+      .get("http://localhost:3000/carretera", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
       .then((response) => {
         setCarreteras(response.data);
         setCarreteraFijo(response.data);
@@ -79,7 +111,12 @@ export default function Incidentes() {
 
   const fetchIncidentes = () => {
     axios
-      .get("http://localhost:3000/incidente")
+      .get("http://localhost:3000/incidente", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
       .then((response) => {
         setIncidentes(response.data);
       })
@@ -92,16 +129,19 @@ export default function Incidentes() {
         lat: parseFloat(carretera.municipioSalida.latitud),
         lng: parseFloat(carretera.municipioSalida.longitud),
         puntoId: carretera.municipioSalida.id,
+        incidente: null,
       },
       ...carretera.puntos.map((punto) => ({
         lat: parseFloat(punto.latitud),
         lng: parseFloat(punto.longitud),
         puntoId: punto.id,
+        incidente: punto.incidente ? punto.incidente : null,
       })),
       {
         lat: parseFloat(carretera.municipioLlegada.latitud),
         lng: parseFloat(carretera.municipioLlegada.longitud),
         puntoId: carretera.municipioLlegada.id,
+        incidente: null,
       },
     ]);
 
@@ -125,20 +165,36 @@ export default function Incidentes() {
       newPolylines.push(polyline);
 
       poly.forEach((punto) => {
-        const circle = new maps.Circle({
-          key: punto.puntoId,
-          strokeColor: "#00ff00",
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: "#00ff00",
-          fillOpacity: 1,
-          center: punto,
-          radius: 1500,
-          zIndex: 2,
-        });
+        if (punto.incidente) {
+          const circle = new maps.Circle({
+            key: punto.puntoId,
+            strokeColor: "#ff0000",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#ff0000",
+            fillOpacity: 1,
+            center: punto,
+            radius: 1500,
+            zIndex: 3,
+          });
+          circle.setMap(map);
+          newCircles.push(circle);
+        } else {
+          const circle = new maps.Circle({
+            key: punto.puntoId,
+            strokeColor: "#00ff00",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#00ff00",
+            fillOpacity: 1,
+            center: punto,
+            radius: 1500,
+            zIndex: 2,
+          });
 
-        circle.setMap(map);
-        newCircles.push(circle);
+          circle.setMap(map);
+          newCircles.push(circle);
+        }
       });
     });
 
@@ -175,6 +231,7 @@ export default function Incidentes() {
     formData.append("tipo", incidenteData.tipo);
     formData.append("descripcion", incidenteData.descripcion);
     formData.append("puntoId", incidenteData.puntoId);
+    formData.append("usuarioId", user.id);
     if (file) {
       formData.append("foto", file);
     }
@@ -186,7 +243,7 @@ export default function Incidentes() {
           formData,
           {
             headers: {
-              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
             },
           }
         )
@@ -207,7 +264,7 @@ export default function Incidentes() {
       axios
         .post("http://localhost:3000/incidente", formData, {
           headers: {
-            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
           },
         })
         .then(() => {
@@ -260,7 +317,12 @@ export default function Incidentes() {
   const handleDelete = (id) => {
     if (window.confirm("¿Está seguro de que desea eliminar este incidente?")) {
       axios
-        .delete(`http://localhost:3000/incidente/${id}`)
+        .delete(`http://localhost:3000/incidente/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
         .then(() => {
           alert("Incidente eliminado correctamente.");
           fetchIncidentes();
@@ -311,6 +373,7 @@ export default function Incidentes() {
 
   return (
     <>
+      <HeaderAdmin />
       <div className="container mt-4">
         <h1 className="mb-4">Gestión de Incidentes</h1>
         {!isSelectingPoint ? (
@@ -408,7 +471,8 @@ export default function Incidentes() {
               <th>ID</th>
               <th>Tipo</th>
               <th>Descripción</th>
-              <th>Fecha</th>
+              <th>Foto</th>
+              {user?.admin && <th>Usuario</th>}
               <th>Acciones</th>
             </tr>
           </thead>
@@ -418,7 +482,14 @@ export default function Incidentes() {
                 <td>{incidente.id}</td>
                 <td>{incidente.tipo || "No especificado"}</td>
                 <td>{incidente.descripcion}</td>
-                <td>{new Date(incidente.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <Image
+                    src={`http://localhost:3000/images/incidente/${incidente.foto}`}
+                    width="100"
+                    height="100"
+                  />
+                </td>
+                {user?.admin && <td>{incidente.usuario?.nombre}</td> }
                 <td>
                   <Button
                     variant="info"
@@ -443,6 +514,31 @@ export default function Incidentes() {
             ))}
           </tbody>
         </Table>
+        
+        <h2 className="mt-4">Lista de Solicitudes de Incidentes</h2>
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th>Detalle</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {solicitudIncidente.map((solicitud) => (
+              <tr key={solicitud.id}>
+                <td>{solicitud.detalle}</td>
+                <td>
+                  <Image
+                    src={`http://localhost:3000/images/solicitudIncidente/${solicitud.foto}`}
+                    width="100"
+                    height="100"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+
       </div>
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
@@ -482,7 +578,21 @@ export default function Incidentes() {
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Foto</Form.Label>
-              <Form.Control type="file" onChange={(e) => handleFileChange(e)} />
+              {isEditing ? (
+                <Form.Control
+                  type="file"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                />
+              ) : (
+                (
+                  <Form.Control
+                    type="file"
+                    onChange={handleFileChange}
+                    accept="image/*"
+                  />
+                )
+              )}
             </Form.Group>
           </Form>
         </Modal.Body>

@@ -2,10 +2,14 @@ import { useEffect, useState } from "react";
 import { Map, useMap, useMapsLibrary, Marker } from "@vis.gl/react-google-maps";
 import axios from "axios";
 import { Button, Form, Modal, Table } from "react-bootstrap";
+import HeaderAdmin from "../components/headerAdmin";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Carreteras() {
+  const token = useAuth();
+  const user = JSON.parse(localStorage.getItem("user"));
   const map = useMap();
-  const maps = useMapsLibrary("maps");  
+  const maps = useMapsLibrary("maps");
   const [mapCenter, setMapCenter] = useState({
     lat: -16.290154,
     lng: -63.588653,
@@ -49,7 +53,12 @@ export default function Carreteras() {
   }, [maps, carreteras]);
 
   const fetchMunicipios = () => {
-    fetch("http://localhost:3000/municipio")
+    fetch("http://localhost:3000/municipio", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
       .then((response) => response.json())
       .then((data) => setMunicipios(data))
       .catch((error) => console.error("Error fetching municipios:", error));
@@ -57,7 +66,12 @@ export default function Carreteras() {
 
   const fetchCarreteras = () => {
     axios
-      .get("http://localhost:3000/carretera")
+      .get("http://localhost:3000/carretera", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
       .then((response) => {
         setCarreteras(response.data);
         setCarreteraFijo(response.data);
@@ -71,14 +85,17 @@ export default function Carreteras() {
       {
         lat: parseFloat(carretera.municipioSalida.latitud),
         lng: parseFloat(carretera.municipioSalida.longitud),
+        incidente: null,
       },
       ...carretera.puntos.map((punto) => ({
         lat: parseFloat(punto.latitud),
         lng: parseFloat(punto.longitud),
+        incidente: punto.incidente ? punto.incidente : null,
       })),
       {
         lat: parseFloat(carretera.municipioLlegada.latitud),
         lng: parseFloat(carretera.municipioLlegada.longitud),
+        incidente: null,
       },
     ]);
 
@@ -102,18 +119,33 @@ export default function Carreteras() {
       newPolylines.push(polyline);
 
       poly.forEach((punto) => {
-        const circle = new maps.Circle({
-          strokeColor: "#00ff00",
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: "#00ff00",
-          fillOpacity: 1,
-          center: punto,
-          radius: 1500,
-          zIndex: 2,
-        });
-        circle.setMap(map);
-        newCircles.push(circle);
+        if (punto.incidente) {
+          const circle = new maps.Circle({
+            strokeColor: "#ff0000",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#ff0000",
+            fillOpacity: 1,
+            center: punto,
+            radius: 1500,
+            zIndex: 3,
+          });
+          circle.setMap(map);
+          newCircles.push(circle);
+        } else {
+          const circle = new maps.Circle({
+            strokeColor: "#00ff00",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#00ff00",
+            fillOpacity: 1,
+            center: punto,
+            radius: 1500,
+            zIndex: 2,
+          });
+          circle.setMap(map);
+          newCircles.push(circle);
+        }
       });
     });
 
@@ -180,8 +212,6 @@ export default function Carreteras() {
       newCircles.push(circle);
     });
 
-    //center map to the middle point
-    //get the middle point of polylineArray
     const middle = Math.floor(polylineArray.length / 2);
 
     map.setCenter(polylineArray[middle]);
@@ -209,7 +239,12 @@ export default function Carreteras() {
 
   const handleDelete = (id) => {
     if (window.confirm("¿Está seguro de que desea eliminar esta carretera?")) {
-      fetch(`http://localhost:3000/carretera/${id}`, { method: "DELETE" })
+      axios
+        .delete(`http://localhost:3000/carretera/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         .then(() => {
           alert("Carretera eliminada correctamente.");
           fetchCarreteras();
@@ -238,13 +273,17 @@ export default function Carreteras() {
       razonBloqueo: "",
       municipioSalidaId: currentCarretera.municipioSalidaId,
       municipioLlegadaId: currentCarretera.municipioLlegadaId,
+      usuarioId: user.id,
     };
 
     console.log(carretera);
 
     fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(carretera),
     })
       .then(() => {
@@ -273,7 +312,10 @@ export default function Carreteras() {
     console.log(newPuntos);
     fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ puntos: newPuntos }),
     })
       .then(() => {
@@ -386,6 +428,7 @@ export default function Carreteras() {
 
   return (
     <>
+      <HeaderAdmin />
       <div className="container mt-4">
         <h1 className="mb-4">Mapa de Municipios</h1>
         {!isSelectingPoints ? (
@@ -481,6 +524,7 @@ export default function Carreteras() {
                   <th>Muncipio Llegada</th>
                   <th>Municipio Salida</th>
                   <th>Razón de Bloqueo</th>
+                  {user?.admin && <th>Usuario</th>}
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -493,6 +537,7 @@ export default function Carreteras() {
                     <td>{carretera.municipioLlegada?.nombre}</td>
                     <td>{carretera.municipioSalida?.nombre}</td>
                     <td>{carretera.razonBloqueo}</td>
+                    {user?.admin && <td>{carretera.usuario?.nombre}</td>}
                     <td>
                       <Button
                         variant="info"

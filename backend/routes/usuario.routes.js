@@ -12,5 +12,8 @@ module.exports = (app) => {
   //login
   router.post("/login", controller.login);
 
+  //change password
+  router.put("/:id/password", controller.changePassword);
+
   app.use("/usuario", router);
 };

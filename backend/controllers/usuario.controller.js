@@ -30,13 +30,13 @@ exports.getUsuarioById = async (req, res) => {
 
 exports.createUsuario = async (req, res) => {
   try {
-    const requiredFields = ["nombre", "userName", "password", "admin"];
+    const requiredFields = ["nombre", "email", "password", "admin"];
 
     if (isRequestValid(requiredFields, req.body, res)) {
-      //verify username is unique
+      //verify email is unique
       const usuarioTemp = await db.usuarios.findOne({
         where: {
-          userName: req.body.userName,
+          email: req.body.email,
         },
       });
 
@@ -50,7 +50,7 @@ exports.createUsuario = async (req, res) => {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
       const usuario = {
         nombre: req.body.nombre,
-        userName: req.body.userName,
+        email: req.body.email,
         password: hashedPassword,
         admin: req.body.admin,
       };
@@ -65,7 +65,7 @@ exports.createUsuario = async (req, res) => {
 //update usuario but not password
 exports.updateUsuario = async (req, res) => {
   try {
-    const requiredFields = ["nombre", "userName", "admin"];
+    const requiredFields = ["nombre", "email", "admin"];
     if (isRequestValid(requiredFields, req.body, res)) {
       const id = req.params.id;
       const usuario = await db.usuarios.findByPk(id);
@@ -75,7 +75,7 @@ exports.updateUsuario = async (req, res) => {
         });
       } else {
         usuario.nombre = req.body.nombre;
-        usuario.userName = req.body.userName;
+        usuario.email = req.body.email;
         usuario.admin = req.body.admin;
         await usuario.save();
         res.status(200).json(usuario);
@@ -104,14 +104,14 @@ exports.deleteUsuario = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const requiredFields = ["userName", "password"];
+  const requiredFields = ["email", "password"];
   try {
     if (!isRequestValid(requiredFields, req.body, res)) {
       return;
     }
     const usuario = await db.usuarios.findOne({
       where: {
-        userName: req.body.userName,
+        email: req.body.email,
       },
     });
 
@@ -160,6 +160,46 @@ exports.getUsuarioByToken = async (req, res) => {
     } else {
       res.status(200).json(usuario);
     }
+  } catch (error) {
+    sendError500(res, error);
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  const requiredFields = ["newPassword"];
+  try {
+    if (!isRequestValid(requiredFields, req.body, res)) {
+      return;
+    }
+
+    const usuario = await db.usuarios.findByPk(req.params.id);
+
+    if (!usuario) {
+      res.status(404).json({
+        message: "Usuario no encontrado",
+      });
+      return;
+    }
+
+    const validPassword = await bcrypt.compare(
+      req.body.newPassword,
+      usuario.password
+    );
+
+    console.log(validPassword);
+
+    if (validPassword) {
+      res.status(400).json({
+        message: "La nueva contraseña no puede ser igual a la anterior",
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
+    usuario.password = hashedPassword;
+    await usuario.save().then(() => {
+      res.status(200).json(usuario);
+    });
   } catch (error) {
     sendError500(res, error);
   }

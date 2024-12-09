@@ -49,6 +49,12 @@ exports.createIncidente = async (req, res) => {
         foto: pathImage,
       };
       const newIncidente = await db.incidentes.create(incidente);
+
+      //cuando se crea se actualiza el estado de la carretera a bloqueada
+      const punto = await db.puntos.findByPk(req.body.puntoId);
+      const carretera = await db.carreteras.findByPk(punto.carreteraId);
+      carretera.estado = "Bloqueada";
+      await carretera.save();
       res.status(201).json(newIncidente);
     }
   } catch (error) {

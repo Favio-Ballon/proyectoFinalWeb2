@@ -5,7 +5,9 @@ const fs = require("fs");
 
 exports.listIncidente = async (req, res) => {
   try {
-    const incidentes = await db.incidentes.findAll();
+    const incidentes = await db.incidentes.findAll({
+      include: ["usuario"],
+    });
     res.status(200).json(incidentes);
   } catch (error) {
     sendError500(res, error);
@@ -48,6 +50,9 @@ exports.createIncidente = async (req, res) => {
         puntoId: req.body.puntoId,
         foto: pathImage,
       };
+      if (req.body.usuarioId) {
+        incidente.usuarioId = req.body.usuarioId;
+      }
       const newIncidente = await db.incidentes.create(incidente);
 
       //cuando se crea se actualiza el estado de la carretera a bloqueada
@@ -84,6 +89,9 @@ exports.updateIncidente = async (req, res) => {
         incidente.tipo = req.body.tipo;
         incidente.descripcion = req.body.descripcion;
         incidente.puntoId = req.body.puntoId;
+        if (req.body.usuarioId) {
+          incidente.usuarioId = req.body.usuarioId;
+        }
         await incidente.save();
         res.status(200).json(incidente);
       }

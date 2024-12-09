@@ -4,7 +4,12 @@ const { isRequestValid } = require("../utils/request.utils");
 exports.listCarretera = async (req, res) => {
   try {
     const carreteras = await db.carreteras.findAll({
-      include: ["municipioSalida", "municipioLlegada", "puntos"],
+      include: [
+        "municipioSalida",
+        "municipioLlegada",
+        "usuario",
+        { association: "puntos", include: ["incidente"] },
+      ],
     });
     res.status(200).json(carreteras);
   } catch (error) {
@@ -46,6 +51,9 @@ exports.createCarretera = async (req, res) => {
         municipioLlegadaId: req.body.municipioLlegadaId,
         municipioSalidaId: req.body.municipioSalidaId,
       };
+      if (req.body.usuarioId) {
+        carretera.usuarioId = req.body.usuarioId;
+      }
       const newCarretera = await db.carreteras.create(carretera);
       res.status(201).json(newCarretera);
     }
@@ -75,6 +83,9 @@ exports.updateCarretera = async (req, res) => {
         carretera.razonBloqueo = req.body.razonBloqueo ?? "";
         carretera.municipioLlegadaId = req.body.municipioLlegadaId;
         carretera.municipioSalidaId = req.body.municipioSalidaId;
+        if (req.body.usuarioId) {
+          carretera.usuarioId = req.body.usuarioId;
+        }
         await carretera.save();
         res.status(200).json(carretera);
       }

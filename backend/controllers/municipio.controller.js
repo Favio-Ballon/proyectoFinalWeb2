@@ -1,9 +1,12 @@
 const db = require("../models");
+const usuario = require("../models/usuario");
 const { isRequestValid } = require("../utils/request.utils");
 
 exports.listMunicipio = async (req, res) => {
   try {
-    const municipios = await db.municipios.findAll();
+    const municipios = await db.municipios.findAll({
+      include: ["usuario"],
+    });
     res.status(200).json(municipios);
   } catch (error) {
     sendError500(res, error);
@@ -37,6 +40,9 @@ exports.createMunicipio = async (req, res) => {
         latitud: req.body.latitud,
         longitud: req.body.longitud,
       };
+      if (req.body.usuarioId) {
+        municipio.usuarioId = req.body.usuarioId;
+      }
       const newMunicipio = await db.municipios.create(municipio);
       res.status(201).json(newMunicipio);
     }
@@ -59,6 +65,9 @@ exports.updateMunicipio = async (req, res) => {
         municipio.nombre = req.body.nombre;
         municipio.latitud = req.body.latitud;
         municipio.longitud = req.body.longitud;
+        if (req.body.usuarioId) {
+          municipio.usuarioId = req.body.usuarioId;
+        }
         await municipio.save();
         res.status(200).json(municipio);
       }

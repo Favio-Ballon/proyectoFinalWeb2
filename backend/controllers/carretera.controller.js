@@ -11,9 +11,27 @@ exports.listCarretera = async (req, res) => {
         { association: "puntos", include: ["incidente"] },
       ],
     });
-    res.status(200).json(carreteras);
+    res.status(200).json(carreteras)
   } catch (error) {
     sendError500(res, error);
+  }
+};
+
+//verificar que carretera esta bloqueada y cual no y actualizar el estado de la carretera
+const updateEstadoCarretera = async () => {
+  const puntos = await db.puntos.findAll({
+    include: ["incidente"],
+  });
+  for (const punto of puntos) {
+    const carretera = await db.carreteras.findByPk(punto.carreteraId);
+    if (punto.incidente) {
+      carretera.estado = "Bloqueada";
+      carretera.razonBloqueo = punto.incidente.tipo;
+    } else {
+      carretera.estado = "Activa";
+      carretera.razonBloqueo = "";
+    }
+    await carretera.save();
   }
 };
 
@@ -87,6 +105,7 @@ exports.updateCarretera = async (req, res) => {
           carretera.usuarioId = req.body.usuarioId;
         }
         await carretera.save();
+        await updateEstadoCarretera();
         res.status(200).json(carretera);
       }
     }
@@ -105,6 +124,7 @@ exports.deleteCarretera = async (req, res) => {
       });
     } else {
       await carretera.destroy();
+      await updateEstadoCarretera();
       res.status(204).json();
     }
   } catch (error) {

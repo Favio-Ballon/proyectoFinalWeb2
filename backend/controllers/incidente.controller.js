@@ -59,6 +59,7 @@ exports.createIncidente = async (req, res) => {
       const punto = await db.puntos.findByPk(req.body.puntoId);
       const carretera = await db.carreteras.findByPk(punto.carreteraId);
       carretera.estado = "Bloqueada";
+      carretera.razonBloqueo = req.body.tipo;
       await carretera.save();
       res.status(201).json(newIncidente);
     }

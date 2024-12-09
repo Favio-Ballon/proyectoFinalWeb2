@@ -30,6 +30,7 @@ exports.getIncidenteById = async (req, res) => {
 
 exports.createIncidente = async (req, res) => {
   try {
+    console.log(req.body);
     const requiredFields = ["tipo", "descripcion", "puntoId"];
     if (!req.files) {
       res.status(400).json({
@@ -38,9 +39,9 @@ exports.createIncidente = async (req, res) => {
       return;
     }
 
-    const pathImage = uploadImage(req.files.foto, "incidente");
-
     if (isRequestValid(requiredFields, req.body, res)) {
+      console.log("req.paso");
+      const pathImage = uploadImage(req.files.foto, "incidente");
       const incidente = {
         tipo: req.body.tipo,
         descripcion: req.body.descripcion,

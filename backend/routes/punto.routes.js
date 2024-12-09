@@ -9,5 +9,7 @@ module.exports = (app) => {
   router.put("/:id", controller.updatePunto);
   router.delete("/:id", controller.deletePunto);
 
+  router.post("/carretera/:carreteraId", controller.createPuntos);
+
   app.use("/punto", router);
 };
